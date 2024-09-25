@@ -196,6 +196,73 @@ vim.keymap.set('n', '<leader>pe', ':Ex<CR>', {})
 vim.keymap.set('n', '<leader>mfr', ':vsp | terminal make run<CR>', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>mft', ':vsp | terminal make test<CR>', { noremap = true, silent = true })
 
+vim.keymap.set('n', '<leader>mfc', ':vsp | terminal make compile<CR>', { noremap = true, silent = true })
+
+vim.keymap.set('n', '<leader>mfd', ':vsp | terminal make clean<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '<leader>mr', ':lua Replace_mask_with_cidr()<CR>', {})
+vim.keymap.set('n', '<leader>mc', ':lua Copy_mask_with_cidr()<CR>', {})
+vim.keymap.set('n', '<leader>vs', ':vsplit<CR>', {})
+vim.keymap.set('n', '<leader>hs', ':split<CR>', {})
+-- Function to convert subnet mask to CIDR notation
+local function subnet_to_cidr(subnet)
+  local cidr_table = {
+    ['255.255.255.255'] = '/32',
+    ['255.255.255.254'] = '/31',
+    ['255.255.255.252'] = '/30',
+    ['255.255.255.248'] = '/29',
+    ['255.255.255.240'] = '/28',
+    ['255.255.255.224'] = '/27',
+    ['255.255.255.192'] = '/26',
+    ['255.255.255.128'] = '/25',
+    ['255.255.255.0'] = '/24',
+    ['255.255.254.0'] = '/23',
+    ['255.255.252.0'] = '/22',
+    ['255.255.248.0'] = '/21',
+    ['255.255.240.0'] = '/20',
+    ['255.255.224.0'] = '/19',
+    ['255.255.192.0'] = '/18',
+    ['255.255.128.0'] = '/17',
+    ['255.255.0.0'] = '/16',
+    ['255.254.0.0'] = '/15',
+    ['255.252.0.0'] = '/14',
+    ['255.248.0.0'] = '/13',
+    ['255.240.0.0'] = '/12',
+    ['255.224.0.0'] = '/11',
+    ['255.192.0.0'] = '/10',
+    ['255.128.0.0'] = '/9',
+    ['255.0.0.0'] = '/8',
+  }
+  return cidr_table[subnet] or nil
+end
+
+local subnet_pattern = '(%d+%.%d+%.%d+%.%d+)'
+
+function Replace_mask_with_cidr()
+  local line = vim.api.nvim_get_current_line()
+  local pattern = subnet_pattern
+  for subnet in line:gmatch(pattern) do
+    if subnet then
+      local cidr = subnet_to_cidr(subnet)
+      if cidr then
+        local new_line = line:gsub(pattern, cidr)
+        vim.api.nvim_set_current_line(new_line)
+      end
+    end
+  end
+end
+
+function Copy_mask_with_cidr()
+  local line = vim.api.nvim_get_current_line()
+  for subnet in line:gmatch(subnet_pattern) do
+    if subnet then
+      local cidr = subnet_to_cidr(subnet)
+      if cidr then
+        vim.fn.setreg('+', cidr)
+      end
+    end
+  end
+end
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -582,6 +649,8 @@ require('lazy').setup({
         -- clangd = {},
         gopls = {},
         pyright = {},
+        zls = {},
+        bicep = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -849,7 +918,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'go' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'go', 'zig', 'python' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -892,7 +961,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
